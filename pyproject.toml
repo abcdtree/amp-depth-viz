@@ -1,0 +1,30 @@
+[build-system]
+# Declares the build backend and its dependencies
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amp-depth-viz" ## Change to your project's name
+version = "0.0.1"
+description = "A short description of your package"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Josh Zhang", email = "josh.zhang@mh.org.au"},
+]
+dependencies = [
+    "bokeh",
+    "numpy",
+    "scipy",
+    "pandas"
+]
+
+[project.scripts]
+amp-depth-viz = "amp_depth_viz.main:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"mypackage" = ["sample/*.bed"]
