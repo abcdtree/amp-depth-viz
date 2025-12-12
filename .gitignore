@@ -1,4 +1,4 @@
 #no build folder
 build
-src/amp_depth_viz/amp_depth_viz.egg-info
+src/amp_depth_viz.egg-info
 poetry.lock
