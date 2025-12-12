@@ -5,7 +5,7 @@
 ```
     git clone https://github.com/abcdtree/amp-depth-viz.git
     cd amp-depth-viz
-    conda create -y conda.yaml
+    conda create -f conda.yaml
     pip install dist/amp_depth_viz-0.0.1.tar.gz
 ```
 
