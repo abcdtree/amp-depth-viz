@@ -1,0 +1,12 @@
+name: amp_depth_viz
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bokeh
+  - pandas
+  - numpy
+  - scipy
+  - selenium
+  - geckodriver
+  - firefox

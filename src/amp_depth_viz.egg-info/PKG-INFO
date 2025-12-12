@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: amp-depth-viz
+Version: 0.0.1
+Summary: A short description of your package
+Author-email: Josh Zhang <josh.zhang@mh.org.au>
+License: MIT
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: bokeh
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: pandas
+
+# amp-depth-viz
+visualise amplicon genome coverage by bokeh using mosdepth output
