@@ -1,4 +1,5 @@
 #no build folder
 build
-src/amp_depth_viz.egg-info
 poetry.lock
+project.toml.error
+project.toml.error2

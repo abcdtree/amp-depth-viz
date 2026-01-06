@@ -1,0 +1,31 @@
+[project]
+name = "amp-depth-viz" ## Change to your project's name
+version = "0.1.1"
+description = "A short description of your package"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Josh Zhang", email = "josh.zhang@mh.org.au"},
+]
+dependencies = [
+    "bokeh>=3.8.1",
+    "numpy>=2.3.5",
+    "scipy>=1.16.3",
+    "pandas>=2.3.3",
+]
+
+[project.scripts]
+amp-depth-viz = "amp_depth_viz.main:main"
+
+
+
+[tool.poetry]
+packages = [
+    { include = "src/amp_depth_viz" },
+]
+include = ["src/amp_depth_viz/template/*"]
+
+[build-system]
+requires = ["poetry-core>=2.2.1"]
+build-backend = "poetry.core.masonry.api"
