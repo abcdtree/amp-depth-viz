@@ -1,2 +1,0 @@
-[console_scripts]
-amp-depth-viz = amp_depth_viz.main:main
