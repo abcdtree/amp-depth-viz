@@ -1,5 +1,3 @@
 #no build folder
 build
 poetry.lock
-project.toml.error
-project.toml.error2
