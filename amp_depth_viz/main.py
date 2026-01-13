@@ -5,6 +5,7 @@ from bokeh.io import export_png
 from bokeh.plotting import figure, output_file, save
 import numpy as np
 from bokeh.models import ColumnDataSource, Whisker
+from bokeh.models import NumeralTickFormatter
 #from bokeh.sampledata.autompg2 import autompg2
 from bokeh.transform import factor_cmap
 from bokeh.layouts import column, grid
@@ -90,6 +91,7 @@ def plot_reads_count(df, sample_col, top=1200, bottom=50, title="Test reads Coun
     #p.xgrid.grid_line_color = None
     p.axis.major_label_text_font_size="14px"
     p.axis.axis_label_text_font_size="12px"
+    p.yaxis.formatter = NumeralTickFormatter(format="0.0a")
 
     return(p)
 
@@ -105,6 +107,7 @@ def plot_box_bokeh(df, sample_col, value_col, yaxis="value", title="Unknown", co
     iqr = qs.q3 - qs.q1
     qs["upper"] = qs.q3 + 1.5*iqr
     qs["lower"] = qs.q1 - 1.5*iqr
+    qs["lower"] = qs["lower"].apply(lambda x: x if x > 1 else 1)
     for sample, group in grouper:
         qs_idx = qs[qs[sample_col] == sample].index[0]
         data = group[value_col]
@@ -119,7 +122,10 @@ def plot_box_bokeh(df, sample_col, value_col, yaxis="value", title="Unknown", co
         q1 = qs.loc[qs_idx, "q1"]
         lower = qs.loc[qs_idx, "lower"]
         wisklo = group[(lower <= data) & (data<= q1)][value_col]
-        qs.loc[qs_idx, "lower"] = q1 if len(wisklo) == 0 else wisklo.min()
+        if value_col == "read_length":
+            qs.loc[qs_idx, "lower"] = q1+10 if len(wisklo) == 0 else (wisklo.min()+10)
+        else:
+            qs.loc[qs_idx, "lower"] = q1 if len(wisklo) == 0 else wisklo.min()
     
     df = pd.merge(df, qs, on=sample_col, how="left")
     
@@ -133,7 +139,7 @@ def plot_box_bokeh(df, sample_col, value_col, yaxis="value", title="Unknown", co
     
     # outlier range
     whisker = Whisker(base=sample_col, upper="upper", lower="lower", source=source)
-    whisker.upper_head.size = whisker.lower_head.size = 20
+    whisker.upper_head.size = whisker.lower_head.size = 15
     p.add_layout(whisker)
     
     # quantile boxes
@@ -144,12 +150,14 @@ def plot_box_bokeh(df, sample_col, value_col, yaxis="value", title="Unknown", co
     # outliers
     if outlier:
         outliers = df[~df[value_col].between(df.lower, df.upper)]
-        p.scatter(sample_col, value_col, source=outliers, size=6, color="black", alpha=0.3)
+        p.scatter(sample_col, value_col, source=outliers, size=6, color=color, alpha=0.3)
 
     p.xaxis.major_label_orientation = 1.5708
     #p.xgrid.grid_line_color = None
     p.axis.major_label_text_font_size="14px"
     p.axis.axis_label_text_font_size="12px"
+    p.y_range.start = 0
+    p.y_range.end = df.upper.max() * 1.1
     
     return(p)
 
