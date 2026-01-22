@@ -1,3 +1,4 @@
 #no build folder
 build
 poetry.lock
+amp_depth_viz/sample/per-read-stats.tsv.gz

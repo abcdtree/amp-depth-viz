@@ -17,6 +17,12 @@ from bokeh.resources import CDN
 from jinja2 import Template
 from plotly.subplots import make_subplots
 
+from plotly.offline import plot
+from plotly.graph_objs import Scatter, Figure
+
+class A4:
+    width = 794
+    height = 1123*1.3
 
 class Colors:
     """Some colours that someone thought were nice."""
@@ -320,15 +326,37 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
       fig_qual – box plot of mean quality
       fig_cnt  – bar plot of read counts
     """
+
+
     df = pd.read_csv(reads_stats_path, sep="\t")
+    if  "sample_name" not in list(df.columns):
+        df["sample_name"] = df["filename"].apply(get_barcode)
+
+    def _filter_outlier(df, sample_col, value_col):
+        grouper = df.groupby(by=sample_col)
+        qs = grouper[value_col].quantile([0.25, 0.5, 0.75]).unstack().reset_index()
+        qs.columns = [sample_col, "q1", "q2", "q3"]
+        iqr = qs.q3 - qs.q1
+        qs["upper"] = qs.q3 + 1.5 * iqr
+        df = pd.merge(df, qs, on=sample_col, how="left")
+        df = df[df[value_col] <= df["upper"]]
+        return df
+
 
     def _box_plotly(df_in, sample_col, value_col, yaxis, title, color):
+        
+        a4 = A4()
+        #print(df_in.head())
+        df_in = df_in[df_in[sample_col] != "Unknown"]
+        df_in = _filter_outlier(df_in, sample_col, value_col)
+        df_in[sample_col] = df_in[sample_col].astype(str)
+        df_in = df_in.sort_values(by=sample_col)
         samples = df_in[sample_col].unique()
         fig = go.Figure()
         for s in samples:
             fig.add_trace(
                 go.Box(
-                    y=df_in.loc[df_in[sample_col] == s, value_col],
+                    y=df_in.loc[df_in[sample_col] == s, value_col].tolist(),
                     name=s,
                     boxmean=False,
                     marker_color=color,
@@ -339,6 +367,7 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
                     hoverinfo="skip",
                 )
             )
+        fig.update_traces(boxpoints=False)
         fig.update_layout(
             title=title,
             xaxis_title="Sample Name",
@@ -349,25 +378,31 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
             yaxis=dict(
                 rangemode="tozero",
                 gridcolor="#d3d3d3",
-                gridwidth=0.5,
+                gridwidth=0.3,
             ),
             bargap=0.01,
             bargroupgap=0.01,
+            #autosize=True,
+            width = a4.width,
+            height = a4.height/4,
         )
         return fig
 
     # ---- barplot helper ----
     def _bar_plotly(df_in, sample_col, title):
+        a4 = A4()
+        df_in = df_in[df_in[sample_col] != "Unknown"]
         counts = (
             df_in.groupby(sample_col)
             .size()
             .reset_index(name="reads_count")
             .sort_values(by=sample_col)
         )
+        #print(counts.head())
         fig = go.Figure(
             go.Bar(
-                x=counts[sample_col],
-                y=counts["reads_count"],
+                x=counts[sample_col].tolist(),
+                y=counts["reads_count"].tolist(),
                 marker_color="steelblue",
                 hovertemplate="%{y}<extra></extra>",
                 showlegend=False,
@@ -383,9 +418,11 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
             yaxis=dict(
                 rangemode="tozero",
                 gridcolor="#d3d3d3",
-                gridwidth=0.5,
+                gridwidth=0.3,
             ),
             bargap=0.01,
+            width = a4.width,
+            height = a4.height/4,
         )
         return fig
 
@@ -398,6 +435,7 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
         title="Boxplot for Read Length",
         color=colors.fandango,
     )
+    #fig_len.write_image("fig_len.png")
     fig_qual = _box_plotly(
         df,
         "sample_name",
@@ -406,7 +444,9 @@ def plot_summary_plotly(reads_stats_path, colors=Colors):
         title="Boxplot for Read Quality",
         color=colors.cerulean,
     )
+    #fig_qual.write_image("fig_quanl.png")
     fig_cnt = _bar_plotly(df, "sample_name", title="Bar Plot for Read Count")
+    #fig_cnt.write_image("fig_cnt.png")
 
     return fig_len, fig_qual, fig_cnt
 
@@ -442,9 +482,10 @@ def plot_coverage_plotly(
         subplot_titles=[f"sample{i}" for i in range(nplots)],
         shared_xaxes=False,
         shared_yaxes=False,
-        horizontal_spacing=0.05,
-        vertical_spacing=0.08,
+        horizontal_spacing=0.1,
+        vertical_spacing=0.09,
     )
+    #a4 = A4()
 
     for idx, sample in enumerate(samples):
         row = (idx // ncols) + 1
@@ -465,8 +506,8 @@ def plot_coverage_plotly(
         p1 = df_sub[df_sub["pool"] == 1]
         fig.add_trace(
             go.Scatter(
-                x=p1["pos"],
-                y=p1["depth"],
+                x=p1["pos"].tolist(),
+                y=p1["depth"].tolist(),
                 mode="lines",
                 line=dict(color=colors.dark_gray),
                 showlegend=False,
@@ -477,8 +518,8 @@ def plot_coverage_plotly(
         )
         fig.add_trace(
             go.Scatter(
-                x=p1["pos"],
-                y=p1["depth"],
+                x=p1["pos"].tolist(),
+                y=p1["depth"].tolist(),
                 mode="none",
                 fill="tozeroy",
                 fillcolor=colors.dark_gray,
@@ -493,8 +534,8 @@ def plot_coverage_plotly(
         p2 = df_sub[df_sub["pool"] == 2]
         fig.add_trace(
             go.Scatter(
-                x=p2["pos"],
-                y=p2["depth"],
+                x=p2["pos"].tolist(),
+                y=p2["depth"].tolist(),
                 mode="lines",
                 line=dict(color=colors.verdigris),
                 showlegend=False,
@@ -505,8 +546,8 @@ def plot_coverage_plotly(
         )
         fig.add_trace(
             go.Scatter(
-                x=p2["pos"],
-                y=p2["depth"],
+                x=p2["pos"].tolist(),
+                y=p2["depth"].tolist(),
                 mode="none",
                 fill="tozeroy",
                 fillcolor=colors.verdigris,
@@ -519,9 +560,10 @@ def plot_coverage_plotly(
 
         fig.update_xaxes(range=[0, xlim], title="position", row=row, col=col)
         fig.update_yaxes(range=[0, ylim], title="depth", row=row, col=col)
+        fig.update_annotations(font_size=10)
         fig.layout.annotations[idx].text = title  # set subplot title
 
-    fig.update_layout(height=250 * nrows, width=400 * ncols)
+    fig.update_layout(height=300 * nrows, width=250 * ncols)
     return fig
 
 
@@ -648,6 +690,23 @@ def combine_and_save_plotly(
     big.write_html(outfile)
     print(f"-- Saved combined plot to {os.path.abspath(outfile)} --")
 
+#use plotly to make plots and use jinja2 to render for html template
+def plotly_plot_combine(
+        plot_list:list,
+        template,
+        output_path:str ):
+    
+    plot_divs = []
+    for p in plot_list:
+        plot_divs.append(plot(p, output_type="div", include_plotlyjs=False))
+    
+    html_output = template.render({
+        "divs":plot_divs
+    })
+    with open(output_path, "w") as f:
+        f.write(html_output)
+    print(f"-- Saved combined plotly plots to {output_path} --")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -696,6 +755,15 @@ def main():
         type=int,
         help="number of columns to grid the plots in the html pages, default as 3",
     )
+
+    parser.add_argument(
+        "--plot_package",
+        "-p",
+        type=str,
+        choices=['bokeh', 'plotly'],
+        default="bokeh",
+        help='Choose a python plot package to make the plots,from the allowed options: %(choices)s'
+    )
     args = parser.parse_args()
 
     ## PART A Read the template
@@ -703,7 +771,7 @@ def main():
         mytemplate = os.path.abspath(args.template)
     else:
         package_root = files("amp_depth_viz")
-        template_path = package_root / "template" / "template.html"
+        template_path = package_root / "template" / f"template_{args.plot_package}.html"
         mytemplate = os.path.abspath(template_path)
 
     ## load template
@@ -711,6 +779,7 @@ def main():
         template_content = f.read()
 
     template = Template(template_content)
+    output_path = os.path.abspath(args.output)
 
     print("-- template loaded successfully --")
 
@@ -720,53 +789,61 @@ def main():
     else:
         read_stats_path = os.path.abspath(args.fastcat_perreads)
 
+    if args.plot_package == "bokeh":
     ## PART B.2 Plot summary
-    p1, p2, p3 = plot_summary(read_stats_path)
-    fig_len, fig_qual, fig_cnt = plot_summary_plotly(read_stats_path)
+        p1, p2, p3 = plot_summary(read_stats_path)
+        #fig_len, fig_qual, fig_cnt = plot_summary_plotly(read_stats_path)
 
-    if p1 is None:
-        print("Something wrong with the summary plot, please check errors and input")
-        sys.exit()
-    if fig_len is None:
-        print("Something wrong with the summary plot, please check errors and input")
-        sys.exit()
-    print("-- reads summary plots are created successfully --")
+        if p1 is None:
+            print("Something wrong with the summary plot, please check errors and input")
+            sys.exit()
+        #if fig_len is None:
+            #print("Something wrong with the summary plot, please check errors and input")
+            #sys.exit()
+        print("-- reads summary plots are created successfully --")
 
-    ### HERE PART C FUNC GOES
-    coverage_plot_bokeh = plot_coverage_bokeh(
-        args.coveragebed,
-        threshold=args.threshold,
-        xlim=args.xlim,
-        ylim=args.ylim,
-        ncols=args.ncols,
-        colors=Colors(),
-    )
+        ### HERE PART C FUNC GOES
+        coverage_plot_bokeh = plot_coverage_bokeh(
+            args.coveragebed,
+            threshold=args.threshold,
+            xlim=args.xlim,
+            ylim=args.ylim,
+            ncols=args.ncols,
+            colors=Colors(),
+        )
 
-    coverage_plot_ploty = plot_coverage_plotly(
-        args.coveragebed,
-        threshold=args.threshold,
-        xlim=args.xlim,
-        ylim=args.ylim,
-        ncols=args.ncols,
-        colors=Colors(),
-    )
+        ## PART D templete render to create html
+        script, divs = components((p1, p2, p3, coverage_plot_bokeh))
 
-    ## PART D templete render to create html
-    script, divs = components((p1, p2, p3, coverage_plot_bokeh))
+        html = template.render(
+            script=script,
+            divs=divs,  # Pass the tuple or dict
+            resources=CDN.render(),  # Optional: loads Bokeh JS/CSS from CDN
+        )
 
-    html = template.render(
-        script=script,
-        divs=divs,  # Pass the tuple or dict
-        resources=CDN.render(),  # Optional: loads Bokeh JS/CSS from CDN
-    )
+        # Save to file or return in a web route
+        print(f"-- Saving the plot to {output_path} --")
+        with open(output_path, "w") as f:
+            f.write(html)
+        print("-- amp-depth-viz pipeline ran successfully without error -- ")
+    
+    elif args.plot_package == "plotly":
+        print("-- making plotly plots --")
+        fig_len, fig_qual, fig_cnt = plot_summary_plotly(read_stats_path)
+        if fig_len is None:
+            print("Something wrong with the summary plot, please check errors and input")
+            sys.exit()
+        coverage_plot_plotly = plot_coverage_plotly(
+            args.coveragebed,
+            threshold=args.threshold,
+            xlim=args.xlim,
+            ylim=args.ylim,
+            ncols=args.ncols,
+            colors=Colors(),
+        )
 
-    # Save to file or return in a web route
-    output_path = os.path.abspath(args.output)
-
-    print(f"-- Saving the plot to {output_path} --")
-    with open(output_path, "w") as f:
-        f.write(html)
-    print("-- amp-depth-viz pipeline ran successfully without error -- ")
-
-    print(" saving plotly plot ")
-    combine_and_save_plotly([fig_len, fig_qual, fig_cnt], "test-plotly.html", ncols=1)
+        plotly_plot_combine([fig_len, fig_qual, fig_cnt, coverage_plot_plotly], template=template, output_path=output_path)
+        print("-- amp-depth-viz pipeline ran successfully without error -- ")
+        
+        #print(" saving plotly plot ")
+        #combine_and_save_plotly([fig_len, fig_qual, fig_cnt], "test-plotly.html", ncols=1)
