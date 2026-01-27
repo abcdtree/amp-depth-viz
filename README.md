@@ -20,6 +20,29 @@
     amp-depth-viz sample/sample_input.bed --fastcat_perreads Data/per-reads-summary.tsv --samplesheet samplesheet.csv --output test.html
 ```
 
+## Using import inner functions
+```
+    #import functions inside amp-depth-viz package
+    from amp_depth_viz.main import *
+
+    #load template from the package files -- add in 0.1.5
+    template = load_template()
+
+    #create plots
+    fig_len, fig_qual, fig_cnt = plot_summary_plotly(file_path_to_fastcat_per_read_file)
+    coverage_plot_plotly = plot_coverage_plotly(
+            coverage_bed_file_from_mosdepth,
+            threshold=20,
+            xlim=30000,
+            ylim=800,
+            ncols=3,
+            colors=Colors(),
+        )
+      
+    #combine the plots and create html
+    plotly_plot_combine([fig_len, fig_qual, fig_cnt, coverage_plot_plotly], template=template, output_path=output_path_to_save_html)
+```
+
 ## Usage
 ```
     usage: amp-depth-viz [-h] [--fastcat_perreads FASTCAT_PERREADS | --fastq_pass FASTQ_PASS] [--template TEMPLATE]
@@ -48,4 +71,6 @@ options:
                         depth threshold for passing QC , default as 20
   --threads THREADS     max number of cpus to use for fastcat analysis
   --ncols NCOLS         number of columns to grid the plots in the html pages, default as 3
+  --plot_package, -p {bokeh,plotly}
+                        Choose a python plot package to make the plots,from the allowed options: bokeh, plotly
 ```

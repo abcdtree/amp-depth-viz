@@ -690,6 +690,17 @@ def combine_and_save_plotly(
     big.write_html(outfile)
     print(f"-- Saved combined plot to {os.path.abspath(outfile)} --")
 
+
+def load_template():
+    package_root = files("amp_depth_viz")
+    template_path = package_root / "template" / f"template_plotly.html"
+    mytemplate = os.path.abspath(template_path)
+    with open(mytemplate, "r") as f:
+        template_content = f.read()
+
+    template = Template(template_content)
+    return template
+
 #use plotly to make plots and use jinja2 to render for html template
 def plotly_plot_combine(
         plot_list:list,
