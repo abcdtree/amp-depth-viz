@@ -1,6 +1,6 @@
 [project]
 name = "amp-depth-viz" ## Change to your project's name
-version = "0.1.4"
+version = "0.1.6"
 description = "A short description of your package"
 readme = "README.md"
 requires-python = ">=3.11"
